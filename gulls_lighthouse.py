@@ -185,7 +185,7 @@ xx, yy = np.meshgrid(np.linspace(-10, 10, 100), np.linspace(0.1, 10, 100))
 z = -2 * logpdf(x_sample.reshape(-1, 1, 1), xx, yy).sum(axis=0) - res.fun
 
 # %%
-levels = stats.chi2.ppf(np.array([0.0, 0.68, 0.95, 0.99]), df=2)
+levels = stats.chi2.ppf(np.array([0.0, 0.68, 0.95]), df=2)
 
 # %%
 fig, ax = plt.subplots()
@@ -220,7 +220,7 @@ ax_ins = ax.inset_axes(
     ylim=(y1, y2),
 )
 ax_ins.set_aspect(1)
-ax_ins.contourf(
+cs = ax_ins.contourf(
     xx,
     yy,
     2 * z,
@@ -229,3 +229,16 @@ ax_ins.contourf(
 ax_ins.scatter(lh_pos_x, lh_pos_y, c="r", marker=".")
 ax_ins.scatter(res.x[0], res.x[1], c="c", marker=".")
 ax.indicate_inset_zoom(ax_ins, ec="grey")
+
+handles, labels = ax.get_legend_handles_labels()
+
+handles += [
+    patches.Patch(color=cs.cmap(cs.norm(0.5 * sum(levels[0:2])))),
+    patches.Patch(color=cs.cmap(cs.norm(0.5 * sum(levels[1:3])))),
+]
+labels += [
+    "Uncertainty (68% CL)",
+    "Uncertainty (95% CL)",
+]
+
+ax.legend(handles, labels)
