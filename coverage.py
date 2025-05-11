@@ -34,9 +34,9 @@ def get_starting_params(X):
 # %%
 def get_sampling_distribution(n, size):
     res = []
-    
+
     for _ in range(size):
-        X = stats.cauchy.rvs(loc=lh_pos_x, scale=lh_pos_y, size=n, random_state=rng)    
+        X = stats.cauchy.rvs(loc=lh_pos_x, scale=lh_pos_y, size=n, random_state=rng)
 
         res_opt = opt.minimize(
             lambda x: -2 * stats.cauchy.logpdf(X, x[0], x[1]).sum(),
@@ -53,8 +53,8 @@ def get_sampling_distribution(n, size):
                 method="Nelder-Mead",
                 options={"maxiter": 2000},
             )
-            assert res_opt.success    
-            
+            assert res_opt.success
+
         delta = -2 * stats.cauchy.logpdf(X, lh_pos_x, lh_pos_y).sum() - res_opt.fun
         res.append(delta.item())
 
@@ -62,24 +62,39 @@ def get_sampling_distribution(n, size):
 
 
 # %%
-N = [5, 10, 20, 40, 80, 160, 320]
+N = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20] + [2**x for x in range(5, 11)]
+N
 
 # %%
 # %%time
-lam = get_sampling_distribution(1000, 10000)
+cov_68 = []
+cov_95 = []
+for n in N:
+    print(f"{n = }")
+
+    lam = get_sampling_distribution(n, 100_000)
+    cov_68.append(np.mean(lam < stats.chi2.ppf(0.68, df=2)))
+    cov_95.append(np.mean(lam < stats.chi2.ppf(0.95, df=2)))
 
 # %%
-x = np.linspace(0, 10)
-density = stats.chi2.pdf(x, df=2) / stats.chi2.cdf(10, df=2)
+fig, axs = plt.subplots(sharex=True, nrows=2)
 
-fig, ax = plt.subplots()
-ax.hist(lam, bins=40, range=(0, 10), density=True)
-ax.plot(x, density)
+axs[0].set_xscale("log")
+axs[0].axhline(0.68, c="k", ls="--")
+axs[0].plot(N, cov_68)
+
+axs[1].set_xscale("log")
+axs[1].axhline(0.95, c="k", ls="--")
+axs[1].plot(N, cov_95)
+
+axs[1].set_xlabel("Sample size")
+axs[0].set_ylabel("Coverage")
+axs[1].set_ylabel("Coverage")
 
 # %%
-np.mean(lam < stats.chi2.ppf(0.68, df=2))
+N
 
 # %%
-np.mean(lam < stats.chi2.ppf(0.95, df=2))
+cov_68
 
 # %%
