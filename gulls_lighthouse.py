@@ -76,7 +76,7 @@ ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
 
 ax.set_xlabel("Shoreline $x_0$")
-ax.set_ylabel("Distance from shore $d$")
+ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
 ax.plot([lh_pos_x, lh_pos_x], [0, lh_pos_y], ls="--", c="grey", zorder=0)
@@ -205,7 +205,7 @@ ax.set_aspect(1)
 ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
 ax.set_xlabel("Shoreline $x_0$")
-ax.set_ylabel("Distance from shore $d$")
+ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
 ax.contourf(xx, yy, 2 * z, levels=levels)

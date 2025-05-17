@@ -18,6 +18,7 @@ import numpy as np
 import scipy.optimize as opt
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+from joblib import Parallel, delayed
 
 # %%
 rng = np.random.default_rng(42)
@@ -27,36 +28,38 @@ lh_pos_x, lh_pos_y = 0.0, 5.0
 
 
 # %%
-def get_starting_params(X):
-    return np.median(X) + 0.1, stats.iqr(X) / 2.0 + 0.1
-
-
-# %%
-def get_sampling_distribution(n, size):
+def get_sampling_distribution(n, size, rng):
+    bounds = [
+        (-50, 50),
+        (0.01, 100),
+    ]
+    
     res = []
-
     for _ in range(size):
         X = stats.cauchy.rvs(loc=lh_pos_x, scale=lh_pos_y, size=n, random_state=rng)
 
+        # Starting parameters
+        loc, scale = np.median(X), stats.iqr(X) / 2.0
+
         res_opt = opt.minimize(
-            lambda x: -2 * stats.cauchy.logpdf(X, x[0], x[1]).sum(),
-            x0=get_starting_params(X),
-            bounds=[(-100, 100), (0.01, 100)],
+            lambda x: -stats.cauchy.logpdf(X, x[0], x[1]).sum(),
+            x0=(loc, scale),
+            bounds=bounds,
         )
 
         if not res_opt.success:
             print(res_opt.message)
             res_opt = opt.minimize(
-                lambda x: -2 * stats.cauchy.logpdf(X, x[0], x[1]).sum(),
-                x0=get_starting_params(X),
-                bounds=[(-100, 100), (0.01, 100)],
+                lambda x: -stats.cauchy.logpdf(X, x[0], x[1]).sum(),
+                x0=(loc, scale),
+                bounds=bounds,
                 method="Nelder-Mead",
                 options={"maxiter": 2000},
             )
             assert res_opt.success
 
-        delta = -2 * stats.cauchy.logpdf(X, lh_pos_x, lh_pos_y).sum() - res_opt.fun
-        res.append(delta.item())
+        delta = -stats.cauchy.logpdf(X, lh_pos_x, lh_pos_y).sum() - res_opt.fun
+        res.append(2 * delta.item())
 
     return np.array(res)
 
@@ -67,14 +70,19 @@ N
 
 # %%
 # %%time
+res = Parallel(n_jobs=-1)(
+    delayed(get_sampling_distribution)(
+        n, 100_000, np.random.default_rng(42 + n)
+    )
+    for n in N
+)
+
+# %%
 cov_68 = []
 cov_95 = []
-for n in N:
-    print(f"{n = }")
-
-    lam = get_sampling_distribution(n, 100_000)
-    cov_68.append(np.mean(lam < stats.chi2.ppf(0.68, df=2)))
-    cov_95.append(np.mean(lam < stats.chi2.ppf(0.95, df=2)))
+for n, dist in zip(N, res):
+    cov_68.append(np.mean(dist < stats.chi2.ppf(0.68, df=2)))
+    cov_95.append(np.mean(dist < stats.chi2.ppf(0.95, df=2)))
 
 # %%
 fig, axs = plt.subplots(sharex=True, nrows=2)
@@ -92,9 +100,7 @@ axs[0].set_ylabel("Coverage")
 axs[1].set_ylabel("Coverage")
 
 # %%
-N
-
-# %%
-cov_68
-
-# %%
+# 16 jobs -> 14 min
+# 8 jobs -> 20 minutes
+# 4 jobs -> 34 min
+# Silly for loop -> 1h 37 min
