@@ -34,12 +34,6 @@ x0 = sp.symbols("x_0", real=True)
 gamma = sp.symbols("gamma", positive=True)
 
 nll = -sp.log(1 / (sp.pi * gamma * (1 + ((x - x0) / gamma)**2))).simplify()
-
-# Jacobian
-dnll_dx0 = sp.lambdify((x, x0, gamma), sp.diff(nll, x0).simplify())
-dnll_dgamma = sp.lambdify((x, x0, gamma), sp.diff(nll, gamma).simplify())
-
-# %%
 jac_sympy = sp.lambdify((x, x0, gamma), sp.simplify(sp.Matrix([nll]).jacobian([x0, gamma])), cse=True)
 
 
@@ -54,21 +48,14 @@ def get_sampling_distribution(n, size, rng):
     for _ in range(size):
         X = stats.cauchy.rvs(loc=lh_pos_x, scale=lh_pos_y, size=n, random_state=rng)
 
-        def jac(x):
-            return jac_sympy(X, x[0], x[1]).sum(axis=-1)
-            # return np.array([
-            #     dnll_dx0(X, x[0], x[1]).sum(),
-            #     dnll_dgamma(X, x[0], x[1]).sum(),
-            # ])
-
         # Starting parameters
-        loc, scale = np.median(X), max(stats.iqr(X) / 2.0, 1e-3)
+        loc, scale = np.median(X), max(stats.iqr(X) / 2.0, 1e-2)
 
         res_opt = opt.minimize(
             lambda x: -stats.cauchy.logpdf(X, x[0], x[1]).sum(),
             x0=(loc, scale),
             bounds=bounds,
-            jac=jac,
+            jac=lambda x: jac_sympy(X, x[0], x[1]).sum(axis=-1),
         )
 
         if not res_opt.success:
