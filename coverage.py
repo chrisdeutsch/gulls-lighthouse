@@ -40,8 +40,8 @@ jac_sympy = sp.lambdify((x, x0, gamma), sp.simplify(sp.Matrix([nll]).jacobian([x
 # %%
 def get_sampling_distribution(n, size, rng):
     bounds = [
-        (-100, 100),
-        (0.01, 100),
+        (None, None),
+        (0.01, None),
     ]
     
     res = []
@@ -55,11 +55,10 @@ def get_sampling_distribution(n, size, rng):
             lambda x: -stats.cauchy.logpdf(X, x[0], x[1]).sum(),
             x0=(loc, scale),
             bounds=bounds,
-            jac=lambda x: jac_sympy(X, x[0], x[1]).sum(axis=-1),
+            jac=lambda x: jac_sympy(X, x[0], x[1]).sum(axis=-1).ravel(),
         )
 
         if not res_opt.success:
-            print(res_opt.message)
             res_opt = opt.minimize(
                 lambda x: -stats.cauchy.logpdf(X, x[0], x[1]).sum(),
                 x0=(loc, scale),
@@ -76,14 +75,14 @@ def get_sampling_distribution(n, size, rng):
 
 
 # %%
-N = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20] + [2**x for x in range(5, 11)]
+N = [3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20] + [2**x for x in range(5, 11)]
 N
 
 # %%
 # %%time
 res = Parallel(n_jobs=-1)(
     delayed(get_sampling_distribution)(
-        n, 100_000, np.random.default_rng(42 + n)
+        n, 1_000_000, np.random.default_rng(42 + n)
     )
     for n in N
 )
@@ -98,17 +97,24 @@ for n, dist in zip(N, res):
 # %%
 fig, axs = plt.subplots(sharex=True, nrows=2)
 
-axs[0].set_xscale("log")
+for ax in axs:
+    ax.set_xscale("log")
+    ax.set_ylabel("Coverage")
+
+
 axs[0].axhline(0.68, c="k", ls="--")
 axs[0].plot(N, cov_68)
+axs[0].yaxis.set_ticks([0.50, 0.55, 0.60, 0.65, 0.7])
+axs[0].annotate("68% CL confidence interval using\nthe asymptotic approximation", (0.48, 0.14), xycoords="axes fraction")
 
-axs[1].set_xscale("log")
 axs[1].axhline(0.95, c="k", ls="--")
 axs[1].plot(N, cov_95)
+axs[1].yaxis.set_ticks([0.85, 0.90, 0.95])
+axs[1].annotate("95% CL confidence interval using\nthe asymptotic approximation", (0.48, 0.14), xycoords="axes fraction")
 
-axs[1].set_xlabel("Sample size")
-axs[0].set_ylabel("Coverage")
-axs[1].set_ylabel("Coverage")
+axs[1].set_xlabel("Sample size $N$")
+
+fig.savefig("plots/coverage.svg")
 
 # %%
 # 16 jobs -> 14 min (linux native: 14 min) (with analytic jacobian: 6 min)
