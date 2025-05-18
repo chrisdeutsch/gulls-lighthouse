@@ -13,3 +13,6 @@ wheels/
 *.ipynb
 .ipynb_checkpoints/
 *.html
+
+#
+plots/

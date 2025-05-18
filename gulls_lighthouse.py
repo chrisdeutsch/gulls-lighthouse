@@ -58,7 +58,7 @@ def to_shoreline_coords(lh_x, lh_y, phi):
 phi = 0.86
 x0 = to_shoreline_coords(lh_pos_x, lh_pos_y, phi)
 
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6, 3.5))
 
 shoreline = patches.Rectangle(
     (-10, -1),
@@ -76,7 +76,7 @@ ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
 
 ax.set_xlabel("Shoreline $x_0$")
-ax.set_ylabel("Distance from shore $d$")
+ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
 ax.plot([lh_pos_x, lh_pos_x], [0, lh_pos_y], ls="--", c="grey", zorder=0)
@@ -92,18 +92,90 @@ ax.annotate(
 ax.scatter(lh_pos_x, lh_pos_y, label="Lighthouse")
 ax.text(0.45, 4.0, r"$\phi$", ha="center", va="center")
 ax.legend()
+fig.savefig("plots/lighthouse_diagram.svg")
 
 # %%
 phi_sample = rng.uniform(-np.pi / 2, np.pi / 2, size=200)
 x_sample = to_shoreline_coords(lh_pos_x, lh_pos_y, phi_sample)
 
 # %%
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6, 3.5))
 ax.hist(x_sample, range=(-10, 10), bins=21)
 
 ax.set_xlim(-10, 10)
 ax.set_xlabel("Shoreline $x_0$")
 ax.set_ylabel("Flashes observed")
+fig.savefig("plots/flashes_histogram.svg")
+
+
+# %%
+# Intuition
+def get_poly(phi, dphi, **kwargs):
+    x0_left = to_shoreline_coords(lh_pos_x, lh_pos_y, phi - dphi / 2)
+    x0_right = to_shoreline_coords(lh_pos_x, lh_pos_y, phi + dphi / 2)
+    return patches.Polygon([(x0_left, 0), (lh_pos_x, lh_pos_y), (x0_right, 0)], closed=True, **kwargs)
+
+
+poly_0 = get_poly(0.0, 0.15, color="grey", alpha=0.5)
+poly_1 = get_poly(1.0, 0.15, color="grey", alpha=0.5)
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+
+shoreline = patches.Rectangle(
+    (-10, -1),
+    20,
+    1,
+    linewidth=1,
+    edgecolor="k",
+    facecolor="none",
+    hatch="//",
+    label="Shoreline",
+)
+
+ax.set_aspect(1)
+ax.set_xlim(-10, 10)
+ax.set_ylim(-0.5, 10.0)
+
+ax.set_xlabel("Shoreline $x_0$")
+ax.set_ylabel("Distance from shore $y$")
+
+ax.add_patch(shoreline)
+ax.add_patch(poly_0)
+ax.add_patch(poly_1)
+
+ax.annotate(
+    r"$\Delta\phi$",
+    (lh_pos_x, lh_pos_y - 2.0),
+    xytext=(-20, 0),
+    textcoords="offset points",
+    ha="right",
+    va="center",
+    arrowprops=dict(arrowstyle="->", color="k"),
+)
+
+ax.annotate(
+    r"$\Delta\phi$",
+    (lh_pos_x + 2.0, lh_pos_y - 1.2),
+    xytext=(0, 20),
+    textcoords="offset points",
+    ha="center",
+    va="bottom",
+    arrowprops=dict(arrowstyle="->", color="k"),
+)
+
+ax.scatter(lh_pos_x, lh_pos_y, label="Lighthouse")
+ax.legend()
+fig.savefig("plots/lighthouse_transformation.svg")
+
+# %%
+# dx0 = (dx0/dphi) * dphi
+
+#f(phi) = 1/pi (-pi/2, pi/2)
+
+
+# f(phi) * dphi = f(x) * dx
+# f(phi) * dphi = f(x) * dx0/dphi * dphi
+# f(x) = f(phi) / (dx0 / dphi) = f(phi) * dphi/dx0
 
 # %% [markdown]
 # Transformation of variable
@@ -162,7 +234,7 @@ density = (
     / sp.integrate(fx, (x_0, -10, 10)).subs({x_l: lh_pos_x, y_l: lh_pos_y}).evalf()
 )
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(6, 3.5))
 ax.hist(x_sample, range=(-10, 10), bins=21, density=True)
 ax.plot(x_plot, density)
 
@@ -179,7 +251,7 @@ res = opt.minimize(
 res
 
 # %%
-xx, yy = np.meshgrid(np.linspace(-10, 10, 100), np.linspace(0.1, 10, 100))
+xx, yy = np.meshgrid(np.linspace(-10, 10, 200), np.linspace(0.1, 10, 200))
 
 # %%
 z = -2 * logpdf(x_sample.reshape(-1, 1, 1), xx, yy).sum(axis=0) - res.fun
@@ -188,7 +260,7 @@ z = -2 * logpdf(x_sample.reshape(-1, 1, 1), xx, yy).sum(axis=0) - res.fun
 levels = stats.chi2.ppf(np.array([0.0, 0.68, 0.95]), df=2)
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(6, 3.5))
 
 shoreline = patches.Rectangle(
     (-10, -1),
@@ -205,7 +277,7 @@ ax.set_aspect(1)
 ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
 ax.set_xlabel("Shoreline $x_0$")
-ax.set_ylabel("Distance from shore $d$")
+ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
 ax.contourf(xx, yy, 2 * z, levels=levels)
@@ -241,4 +313,6 @@ labels += [
     "Uncertainty (95% CL)",
 ]
 
-ax.legend(handles, labels)
+fig.savefig("lighthouse.svg")
+
+# %%
