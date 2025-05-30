@@ -75,7 +75,7 @@ ax.set_aspect(1)
 ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
 
-ax.set_xlabel("Shoreline $x_0$")
+ax.set_xlabel("Shoreline $x$")
 ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
@@ -91,7 +91,7 @@ ax.annotate(
 )
 ax.scatter(lh_pos_x, lh_pos_y, label="Lighthouse")
 ax.text(0.45, 4.0, r"$\phi$", ha="center", va="center")
-ax.legend()
+ax.legend(frameon=False)
 fig.savefig("plots/lighthouse_diagram.svg")
 
 # %%
@@ -103,7 +103,7 @@ fig, ax = plt.subplots(figsize=(6, 3.5))
 ax.hist(x_sample, range=(-10, 10), bins=21)
 
 ax.set_xlim(-10, 10)
-ax.set_xlabel("Shoreline $x_0$")
+ax.set_xlabel("Shoreline $x$")
 ax.set_ylabel("Flashes observed")
 fig.savefig("plots/flashes_histogram.svg")
 
@@ -136,7 +136,7 @@ ax.set_aspect(1)
 ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
 
-ax.set_xlabel("Shoreline $x_0$")
+ax.set_xlabel("Shoreline $x$")
 ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
@@ -164,7 +164,7 @@ ax.annotate(
 )
 
 ax.scatter(lh_pos_x, lh_pos_y, label="Lighthouse")
-ax.legend()
+ax.legend(frameon=False)
 fig.savefig("plots/lighthouse_transformation.svg")
 
 # %%
@@ -239,7 +239,7 @@ ax.hist(x_sample, range=(-10, 10), bins=21, density=True)
 ax.plot(x_plot, density)
 
 ax.set_xlim(-10, 10)
-ax.set_xlabel("Shoreline $x_0$")
+ax.set_xlabel("Shoreline $x$")
 ax.set_ylabel("Flashes observed")
 
 # %%
@@ -276,7 +276,7 @@ shoreline = patches.Rectangle(
 ax.set_aspect(1)
 ax.set_xlim(-10, 10)
 ax.set_ylim(-0.5, 10.0)
-ax.set_xlabel("Shoreline $x_0$")
+ax.set_xlabel("Shoreline $x$")
 ax.set_ylabel("Distance from shore $y$")
 
 ax.add_patch(shoreline)
@@ -312,7 +312,5 @@ labels += [
     "Uncertainty (68% CL)",
     "Uncertainty (95% CL)",
 ]
-
-fig.savefig("lighthouse.svg")
-
-# %%
+ax.legend(handles=handles, labels=labels, frameon=False)
+fig.savefig("plots/lighthouse.svg")
